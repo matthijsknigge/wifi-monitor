@@ -1,17 +1,16 @@
 #!/bin/bash
 
 # Check if the correct number of arguments is provided
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <network_location> <log_file>"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <log_file>"
     exit 1
 fi
 
-# Assign arguments to variables
-NETWORK_LOCATION=$1
-LOG_FILE=$2
+# Assign argument to variable
+LOG_FILE=$1
 
 # Get the initial list of devices
-INITIAL_DEVICES=$(arp-scan --interface=eth0 --localnet | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
+INITIAL_DEVICES=$(arp-scan --localnet | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
 
 echo -e "Monitoring network for new devices...\n"
 echo -e "Initial devices:\n$INITIAL_DEVICES\n"
@@ -21,7 +20,7 @@ echo -e "Timestamp\tIP Address\tMAC Address\tManufacturer" | tee -a "$LOG_FILE"
 
 while true; do
     # Scan the network for devices
-    CURRENT_DEVICES=$(arp-scan --interface=eth0 --localnet)
+    CURRENT_DEVICES=$(arp-scan --localnet)
 
     # Extract MAC addresses and IP addresses
     CURRENT_MACS=$(echo "$CURRENT_DEVICES" | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
@@ -34,7 +33,7 @@ while true; do
         # Log the new devices with a timestamp
         for MAC in $NEW_MACS; do
             IP=$(echo "$CURRENT_DEVICES" | grep "$MAC" | awk '{print $1}')
-            MANUFACTURER=$(arp-scan --interface=eth0 --localnet | grep "$MAC" | awk -F'\t' '{print $3}')
+            MANUFACTURER=$(arp-scan --localnet | grep "$MAC" | awk -F'\t' '{print $3}')
             TIMESTAMP=$(date)
             LOG_ENTRY="$TIMESTAMP\t$IP\t$MAC\t$MANUFACTURER"
             echo -e "$LOG_ENTRY" | tee -a "$LOG_FILE"
